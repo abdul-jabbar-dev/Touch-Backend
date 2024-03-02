@@ -23,8 +23,11 @@ export const generateRefreshToken = async (data: IJwtData) => {
   }
 };
 
-export const decodToken = async (token: string) => {
+export const decodeToken = async (token: string) => {
   try {
+    if (token.includes("RefreshToken=" || "AccessToken=")) { 
+      token = token.split("Token=")[1];
+    }
     const res: string | jwt.JwtPayload | null = await jwt.decode(token);
     if (!res || typeof res === "string") {
       throw Error("Invalid token");

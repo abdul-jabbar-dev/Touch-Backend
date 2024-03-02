@@ -1,4 +1,4 @@
-const OTPE_MAIL_UI = ({
+const OTP_MAIL_UI = ({
   code,
 }: {
   code: number;
@@ -46,4 +46,4 @@ const OTPE_MAIL_UI = ({
 </body>
 
 </html>`;
-export default OTPE_MAIL_UI;
+export default OTP_MAIL_UI;

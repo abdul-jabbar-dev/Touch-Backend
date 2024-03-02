@@ -15,14 +15,7 @@ const oAuth2Client = new google.auth.OAuth2(
   
   try {
     const accessToken = await oAuth2Client.getAccessToken();
-    console.log({
-      type: "OAuth2",
-      user: ENV.SENDER_MAIL,
-      clientId: ENV.CLIENT_ID,
-      clientSecret: ENV.CLIENT_SECRET,
-      refreshToken: ENV.REFRESH_TOKEN,
-      accessToken: accessToken.token,
-    });
+ 
     let transport = nodemailer.createTransport({
       service: "gmail",
       auth: {

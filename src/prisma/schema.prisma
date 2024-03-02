@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -11,19 +11,19 @@ enum AccountStatus {
   Active
   Deactive
   Verifying
-  MakingUserName  
+  MakingUserName
 }
 
 model users {
-  id          String       @id  @default(uuid())
-  userName    String @default(uuid())
+  id          String       @id @default(uuid())
+  userName    String       @unique 
   email       String       @unique
   userInfo    userInfos?
   credentials credentials?
 }
 
 model userInfos {
-  id          String  @id  @default(uuid())
+  id          String  @id @default(uuid())
   fullName    String
   profileImg  String  @unique
   coverImg    String  @unique
@@ -35,13 +35,13 @@ model userInfos {
 }
 
 model credentials {
-  id                    String    @id  @default(uuid())
+  id                    String        @id @default(uuid())
   password              String?
   refreshToken          String?
   accessToken           String?
   emailValidatorCode    Int?
   emailValidatorCodeExp DateTime?
-  accountStatus AccountStatus @default(Verifying)
-  user                  users     @relation(fields: [usersId], references: [id])
-  usersId               String    @unique
+  accountStatus         AccountStatus @default(Verifying)
+  user                  users         @relation(fields: [usersId], references: [id])
+  usersId               String        @unique
 }
