@@ -11,7 +11,7 @@ enum AccountStatus {
   Active
   Deactive
   Verifying
-  MakingUserName
+  MakingProfile
 }
 
 model users {

@@ -4,7 +4,8 @@ import { ZodError } from "zod";
 
 const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
   let { statusCode, ...error }: IError = {
-    message: err.message || "Internal server error",
+    message:
+      typeof err === "string" ? err : err.message || "Internal server error",
     statusCode: 500,
     status: false,
     errorDef: {
@@ -13,7 +14,6 @@ const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
       exprect: "",
     },
   };
-
   if (err instanceof ZodError) {
     error.message =
       err.issues.map((e) => e.path[e.path.length - 1]).join(", ") +

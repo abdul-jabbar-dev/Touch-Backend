@@ -1,2 +1,2 @@
 -- AlterEnum
-ALTER TYPE "AccountStatus" ADD VALUE 'MakingUserName';
+ALTER TYPE "AccountStatus" ADD VALUE 'MakingProfile';

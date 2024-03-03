@@ -1,9 +1,12 @@
-import { AccountStatus } from "@prisma/client";
 import sendMailWithGmail from "../../connection/mail/Mail";
 import OTP_MAIL_UI from "../../connection/mail/OTPTemplete";
 import prisma from "../../connection/prisma/prismaInstance";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt/JWT";
 import generateUserName from "../../utils/common/generateUserName";
+import { AccountStatus } from "@prisma/client";
+import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
+import moment, { now } from "moment";
+import { generateOTPCode, sendOTP } from "../../func/sendOTP";
 
 export const getAUserWithEmailDB = async ({ email }: { email: string }) => {
   const user = await prisma.users.findUnique({
@@ -42,10 +45,10 @@ export const initUserDB = async ({ email }: { email: string }) => {
       refreshToken: string | null;
     };
   } | null;
-  const code = Math.floor(1000 + Math.random() * 9000);
   const codeExp = new Date(Date.now() + 5 * 60 * 1000);
   try {
-    await prisma.$transaction(async (AsyncPrisma) => {
+    const code = generateOTPCode();
+    await prisma.$transaction(async (AsyncPrisma: any) => {
       const emailToUserName = await generateUserName(email.split("@")[0]);
       if (!emailToUserName) {
         throw new Error("Invalid Create Username");
@@ -60,12 +63,12 @@ export const initUserDB = async ({ email }: { email: string }) => {
 
       const tokens = {
         accessToken: await generateAccessToken({
-          accountStatus: "MakingUserName",
+          accountStatus: "Verifying",
           id: user.id,
           userName: user.userName,
         }),
         refreshToken: await generateRefreshToken({
-          accountStatus: "MakingUserName",
+          accountStatus: "Verifying",
           id: user.id,
           userName: user.userName,
         }),
@@ -76,7 +79,7 @@ export const initUserDB = async ({ email }: { email: string }) => {
           usersId: user.id,
           emailValidatorCode: code,
           emailValidatorCodeExp: codeExp,
-          accountStatus: "MakingUserName",
+          accountStatus: "Verifying",
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
         },
@@ -86,12 +89,7 @@ export const initUserDB = async ({ email }: { email: string }) => {
         throw new Error("Email validation code failed to generate");
       }
 
-      const emailR = await sendMailWithGmail({
-        html: OTP_MAIL_UI({ code }),
-        subject: "OTP Verification",
-        text: "Please use the verification code below to sign in. " + code,
-        to: email,
-      });
+      const emailR = await sendOTP({ email, code });
 
       if (!userCredential) {
         throw new Error("OTP failed to generate");
@@ -110,6 +108,109 @@ export const initUserDB = async ({ email }: { email: string }) => {
     } else {
       throw new Error("Registration failed");
     }
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const verifyEmailDB = async ({
+  otp,
+  activeUser,
+}: {
+  otp: number;
+  activeUser: IReqVerifyUser;
+}) => {
+  try {
+    let isSuccess: { accessToken: string; refreshToken: string } | null = null;
+
+    if (
+      activeUser?.credentials?.emailValidatorCode &&
+      activeUser?.credentials?.emailValidatorCodeExp
+    ) {
+      if (activeUser?.credentials?.emailValidatorCode === otp) {
+        if (
+          moment(activeUser.credentials.emailValidatorCodeExp).isAfter(now())
+        ) {
+          const updating = await prisma.credentials.update({
+            where: {
+              usersId: activeUser.id,
+            },
+            data: {
+              emailValidatorCode: null,
+              emailValidatorCodeExp: null,
+              accountStatus: "MakingProfile",
+              accessToken: await generateAccessToken({
+                accountStatus: "MakingProfile",
+                id: activeUser.id,
+                userName: activeUser.userName,
+              }),
+              refreshToken: await generateRefreshToken({
+                accountStatus: "MakingProfile",
+                id: activeUser.id,
+                userName: activeUser.userName,
+              }),
+            },
+            include: { user: true },
+          });
+          if (updating) {
+            isSuccess = {
+              accessToken: updating.accessToken as string,
+              refreshToken: updating.refreshToken as string,
+            };
+          }
+        } else {
+          throw new Error("Expire Code");
+        }
+      } else {
+        throw new Error("Invalid Code");
+      }
+    } else {
+      throw new Error("Resend OTP, Internal server error..");
+    }
+
+    return isSuccess;
+  } catch (error) {
+    throw error;
+  }
+};
+export const  resendOTP_DB = async (email: string) => {
+  try {
+    const user = await prisma.users.findUnique({
+      where: {
+        email,
+      },
+      include: {
+        credentials: true,
+      },
+    });
+    const code = generateOTPCode();
+    let isSuccess: boolean;
+    const codeExp = new Date(Date.now() + 5 * 60 * 1000);
+    if (!user) {
+      throw new Error("User not registered. Try to signup");
+    } else {
+      if (user.credentials?.accountStatus !== "Verifying") {
+        throw new Error("Account already Verified");
+      } else {
+        const userCredential = await prisma.credentials.update({
+          where: {
+            usersId: user.id,
+          },
+          data: {
+            usersId: user.id,
+            emailValidatorCode: code,
+            emailValidatorCodeExp: codeExp,
+          },
+        });
+        const emailR = await sendOTP({ email, code });
+        if (emailR) {
+          isSuccess = true;
+        } else {
+          isSuccess = false;
+        }
+      }
+    }
+   return isSuccess
   } catch (error) {
     throw error;
   }
