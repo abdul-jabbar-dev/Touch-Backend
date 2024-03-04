@@ -1,8 +1,15 @@
 import { RequestHandler } from "express";
 import sendResponse from "../../utils/res/sendResponse";
 import catchAsync from "../../utils/common/catchAsync";
-import { initUserDB, resendOTP_DB, verifyEmailDB } from "./service";
+import {
+  completeProfileDB,
+  initUserDB,
+  resendOTP_DB,
+  updateProfileDB,
+  verifyEmailDB,
+} from "./service";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
+import { userInfos, users } from "@prisma/client";
 export const getUsers: RequestHandler = catchAsync(async (req, res) => {});
 
 export const initUser: RequestHandler = catchAsync(async (req, res) => {
@@ -38,6 +45,38 @@ export const resendOTP: RequestHandler = catchAsync(async (req, res) => {
   if (result) {
     sendResponse(res, {
       message: "We have sent you a password recover link to your email",
+    });
+  } else {
+    throw new Error("Internal server error");
+  }
+});
+
+export const updateProfile: RequestHandler = catchAsync(async (req, res) => {
+  const activeUser: IReqVerifyUser = req.authUser!;
+  const body: Partial<userInfos> = req.body;
+
+  const result: userInfos = await updateProfileDB(activeUser, body);
+
+  if (result) {
+    sendResponse(res, {
+      message: "Profile Update successfully",
+      data: result,
+    });
+  } else {
+    throw new Error("Internal server error");
+  }
+});
+
+export const completeProfile: RequestHandler = catchAsync(async (req, res) => {
+  const activeUser: IReqVerifyUser = req.authUser!;
+  const body: Omit<userInfos, "id" | "usersId"> = req.body;
+ 
+  const result: users = await completeProfileDB(activeUser, body);
+
+  if (result) {
+    sendResponse(res, {
+      message: "Profile Update successfully",
+      data: result,
     });
   } else {
     throw new Error("Internal server error");

@@ -19,7 +19,7 @@ model users {
   userName    String       @unique 
   email       String       @unique
   userInfo    userInfos?
-  credentials credentials?
+  credentials credentials? 
 }
 
 model userInfos {

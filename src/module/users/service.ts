@@ -1,9 +1,7 @@
-import sendMailWithGmail from "../../connection/mail/Mail";
-import OTP_MAIL_UI from "../../connection/mail/OTPTemplete";
 import prisma from "../../connection/prisma/prismaInstance";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt/JWT";
 import generateUserName from "../../utils/common/generateUserName";
-import { AccountStatus } from "@prisma/client";
+import { AccountStatus, userInfos, users } from "@prisma/client";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
 import moment, { now } from "moment";
 import { generateOTPCode, sendOTP } from "../../func/sendOTP";
@@ -173,7 +171,7 @@ export const verifyEmailDB = async ({
     throw error;
   }
 };
-export const  resendOTP_DB = async (email: string) => {
+export const resendOTP_DB = async (email: string) => {
   try {
     const user = await prisma.users.findUnique({
       where: {
@@ -210,7 +208,45 @@ export const  resendOTP_DB = async (email: string) => {
         }
       }
     }
-   return isSuccess
+    return isSuccess;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateProfileDB = async (
+  activeUser: IReqVerifyUser,
+  userInformation: Partial<userInfos>
+): Promise<userInfos> => {
+  try {
+    if (!userInformation) {
+      throw new Error("No field selected for update");
+    }
+    const updatedUserInfo = await prisma.userInfos.update({
+      where: { usersId: activeUser.id },
+      data: userInformation,
+    });
+
+    return updatedUserInfo;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const completeProfileDB = async (
+  activeUser: IReqVerifyUser,
+  userInformation: Omit<userInfos, "id" | "usersId">
+): Promise<users> => {
+  try {
+    const upUser = await prisma.users.update({
+      where: { id: activeUser.id },
+      data: {
+        credentials: { update: { accountStatus: "Active" } },
+        userInfo: { create: { ...userInformation ,} },
+      },
+      include: { credentials: true, userInfo: true },
+    });
+    return upUser;
   } catch (error) {
     throw error;
   }

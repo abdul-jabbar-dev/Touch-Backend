@@ -1,6 +1,7 @@
 import { ErrorRequestHandler } from "express";
 import IError from "../interface/error/IError";
 import { ZodError } from "zod";
+import { PrismaClientValidationError } from "@prisma/client/runtime/library";
 
 const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
   let { statusCode, ...error }: IError = {
@@ -14,6 +15,7 @@ const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
       exprect: "",
     },
   };
+
   if (err instanceof ZodError) {
     error.message =
       err.issues.map((e) => e.path[e.path.length - 1]).join(", ") +
@@ -26,6 +28,10 @@ const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
         " " +
         err.issues[0].message,
     };
+  } else if (err instanceof PrismaClientValidationError) {
+    if (err.message.includes("Argument")) {
+      error.message = "Argument" + err.message.split("Argument")[1];
+    }
   }
   res.status(statusCode).send(error);
 };
