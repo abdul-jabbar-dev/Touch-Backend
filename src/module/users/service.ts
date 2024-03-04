@@ -5,6 +5,7 @@ import { AccountStatus, userInfos, users } from "@prisma/client";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
 import moment, { now } from "moment";
 import { generateOTPCode, sendOTP } from "../../func/sendOTP";
+import { hashedPassword } from "../../utils/hashed/hashedPass";
 
 export const getAUserWithEmailDB = async ({ email }: { email: string }) => {
   const user = await prisma.users.findUnique({
@@ -113,9 +114,11 @@ export const initUserDB = async ({ email }: { email: string }) => {
 
 export const verifyEmailDB = async ({
   otp,
+  pass,
   activeUser,
 }: {
   otp: number;
+  pass: string;
   activeUser: IReqVerifyUser;
 }) => {
   try {
@@ -136,6 +139,7 @@ export const verifyEmailDB = async ({
             data: {
               emailValidatorCode: null,
               emailValidatorCodeExp: null,
+              password: await hashedPassword(pass),
               accountStatus: "MakingProfile",
               accessToken: await generateAccessToken({
                 accountStatus: "MakingProfile",
@@ -242,7 +246,7 @@ export const completeProfileDB = async (
       where: { id: activeUser.id },
       data: {
         credentials: { update: { accountStatus: "Active" } },
-        userInfo: { create: { ...userInformation ,} },
+        userInfo: { create: { ...userInformation } },
       },
       include: { credentials: true, userInfo: true },
     });

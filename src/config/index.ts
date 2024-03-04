@@ -5,6 +5,7 @@ const ENV = {
   REDIRECT_URIS: process.env.REDIRECT_URIS,
   REFRESH_TOKEN: process.env.REFRESH_TOKEN,
   SENDER_MAIL: process.env.SENDER_MAIL,
+  SALT: process.env.SALT,
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_TOKEN_EXP: {
     ACCESS_TOKEN_EXP: "90d",

@@ -21,21 +21,16 @@ export const initUser: RequestHandler = catchAsync(async (req, res) => {
 
 export const verifyEmail: RequestHandler = catchAsync(
   async (req, res, next) => {
-    const otp: number | null = req.headers.otp
-      ? parseInt(req.headers.otp as string)
-      : null;
-    if (otp === null) {
-      next("OTP is missing");
-    } else {
-      const activeUser: IReqVerifyUser = req.authUser!;
+    const otp: number = parseInt(req.body.otp);
+    const pass = req.body.password;
+    const activeUser: IReqVerifyUser = req.authUser!;
 
-      const isSuccess = await verifyEmailDB({ otp, activeUser });
+    const isSuccess = await verifyEmailDB({ otp, pass, activeUser });
 
-      sendResponse(res, {
-        message: "user Verification successful",
-        data: isSuccess,
-      });
-    }
+    sendResponse(res, {
+      message: "user Verification successful",
+      data: isSuccess,
+    });
   }
 );
 
@@ -70,7 +65,7 @@ export const updateProfile: RequestHandler = catchAsync(async (req, res) => {
 export const completeProfile: RequestHandler = catchAsync(async (req, res) => {
   const activeUser: IReqVerifyUser = req.authUser!;
   const body: Omit<userInfos, "id" | "usersId"> = req.body;
- 
+
   const result: users = await completeProfileDB(activeUser, body);
 
   if (result) {

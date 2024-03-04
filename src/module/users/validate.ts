@@ -5,6 +5,14 @@ const createUserValidator = z.object({
     email: z.string().email({ message: "Invalid email address" }),
   }),
 });
+export const verifyUserValidator = z.object({
+  body: z.object({
+    password: z
+      .string()
+      .length(6, { message: "Password must be 6 character " }),
+    otp: z.number(),
+  }),
+});
 
 export const updateUserValidator = z.object({
   body: z.object({
