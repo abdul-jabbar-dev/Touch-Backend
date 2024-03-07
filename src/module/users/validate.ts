@@ -14,6 +14,13 @@ export const verifyUserValidator = z.object({
   }),
 });
 
+export const loginUserValidator = z.object({
+  body: z.object({
+    email: z.string() ,
+    password: z.string(),
+  }),
+});
+
 export const updateUserValidator = z.object({
   body: z.object({
     fullName: z.string().optional(),

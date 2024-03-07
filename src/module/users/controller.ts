@@ -4,12 +4,14 @@ import catchAsync from "../../utils/common/catchAsync";
 import {
   completeProfileDB,
   initUserDB,
+  loginInfoDB,
   resendOTP_DB,
   updateProfileDB,
   verifyEmailDB,
 } from "./service";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
 import { userInfos, users } from "@prisma/client";
+import ILogin from "../../interface/user/IUserLogin";
 export const getUsers: RequestHandler = catchAsync(async (req, res) => {});
 
 export const initUser: RequestHandler = catchAsync(async (req, res) => {
@@ -76,4 +78,14 @@ export const completeProfile: RequestHandler = catchAsync(async (req, res) => {
   } else {
     throw new Error("Internal server error");
   }
+});
+export const loginUser: RequestHandler = catchAsync(async (req, res, next) => {
+  const loginInfo: ILogin = req.body;
+
+  const tokens = await loginInfoDB(loginInfo);
+
+  sendResponse(res, {
+    message: "user Login successful",
+    data: tokens,
+  });
 });

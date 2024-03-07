@@ -5,7 +5,8 @@ import { AccountStatus, userInfos, users } from "@prisma/client";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
 import moment, { now } from "moment";
 import { generateOTPCode, sendOTP } from "../../func/sendOTP";
-import { hashedPassword } from "../../utils/hashed/hashedPass";
+import { comparePassword, hashedPassword } from "../../utils/hashed/hashedPass";
+import ILogin from "../../interface/user/IUserLogin";
 
 export const getAUserWithEmailDB = async ({ email }: { email: string }) => {
   const user = await prisma.users.findUnique({
@@ -97,8 +98,8 @@ export const initUserDB = async ({ email }: { email: string }) => {
         user: { userId: user.id, email: user.email, userName: user.userName },
         credentials: {
           accountStatus: userCredential.accountStatus,
-          accessToken: userCredential.accessToken,
-          refreshToken: userCredential.refreshToken,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
         },
       };
     });
@@ -132,6 +133,18 @@ export const verifyEmailDB = async ({
         if (
           moment(activeUser.credentials.emailValidatorCodeExp).isAfter(now())
         ) {
+          const tokens = {
+            accessToken: await generateAccessToken({
+              accountStatus: "MakingProfile",
+              id: activeUser.id,
+              userName: activeUser.userName,
+            }),
+            refreshToken: await generateRefreshToken({
+              accountStatus: "MakingProfile",
+              id: activeUser.id,
+              userName: activeUser.userName,
+            }),
+          };
           const updating = await prisma.credentials.update({
             where: {
               usersId: activeUser.id,
@@ -141,23 +154,15 @@ export const verifyEmailDB = async ({
               emailValidatorCodeExp: null,
               password: await hashedPassword(pass),
               accountStatus: "MakingProfile",
-              accessToken: await generateAccessToken({
-                accountStatus: "MakingProfile",
-                id: activeUser.id,
-                userName: activeUser.userName,
-              }),
-              refreshToken: await generateRefreshToken({
-                accountStatus: "MakingProfile",
-                id: activeUser.id,
-                userName: activeUser.userName,
-              }),
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
             },
             include: { user: true },
           });
           if (updating) {
             isSuccess = {
-              accessToken: updating.accessToken as string,
-              refreshToken: updating.refreshToken as string,
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
             };
           }
         } else {
@@ -251,6 +256,45 @@ export const completeProfileDB = async (
       include: { credentials: true, userInfo: true },
     });
     return upUser;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const loginInfoDB = async (loginInfo: ILogin) => {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { email: loginInfo.email },
+      include: { credentials: true },
+    });
+    if (!user) {
+      throw new Error("User not exist");
+    } else {
+      if (!user.credentials?.password) {
+        throw new Error("Password not set try to forget password");
+      }
+      const isMatchPass = await comparePassword({
+        plain: loginInfo.password,
+        hashed: user.credentials?.password,
+      });
+      if (!isMatchPass) {
+        throw new Error("Invalid password");
+      } else {
+        const tokens = {
+          accessToken: await generateAccessToken({
+            accountStatus: user.credentials.accountStatus,
+            id: user.id,
+            userName: user.userName,
+          }),
+          refreshToken: await generateRefreshToken({
+            accountStatus: user.credentials.accountStatus,
+            id: user.id,
+            userName: user.userName,
+          }),
+        };
+        return tokens
+      }
+    }
   } catch (error) {
     throw error;
   }

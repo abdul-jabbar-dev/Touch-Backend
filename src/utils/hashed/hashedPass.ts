@@ -2,7 +2,7 @@ import b from "bcrypt";
 import ENV from "../../config";
 export const hashedPassword = async (pass: string) => {
   try {
-    const hashed = await b.hash(pass, ENV.SALT!);
+    const hashed = await b.hash(pass, parseInt(ENV.SALT!));
     return hashed;
   } catch (error) {
     throw error;
