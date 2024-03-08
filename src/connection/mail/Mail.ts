@@ -3,19 +3,16 @@ import IMail from "../../interface/mail/IMail";
 const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
 
-
 const oAuth2Client = new google.auth.OAuth2(
   ENV.CLIENT_ID,
   ENV.CLIENT_SECRET,
   ENV.REDIRECT_URIS
-  );
-  oAuth2Client.setCredentials({ refresh_token: ENV.REFRESH_TOKEN });
-  
-  const sendMailWithGmail = async (data: IMail) => {
-  
+);
+oAuth2Client.setCredentials({ refresh_token: ENV.REFRESH_TOKEN });
+
+const sendMailWithGmail = async (data: IMail) => {
   try {
-    const accessToken = await oAuth2Client.getAccessToken();
- 
+    const accessToken = await oAuth2Client.getAccessToken(); 
     let transport = nodemailer.createTransport({
       service: "gmail",
       auth: {

@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { PrismaClientValidationError } from "@prisma/client/runtime/library";
 
 const GlobalError: ErrorRequestHandler = (err, req, res, next) => {
+  console.log(err)
   let { statusCode, ...error }: IError = {
     message:
       typeof err === "string" ? err : err.message || "Internal server error",
