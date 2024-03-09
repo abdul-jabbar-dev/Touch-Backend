@@ -11,13 +11,13 @@ import {
 } from "./service";
 import { IReqVerifyUser } from "../../interface/utils/req/IReqVerifyUser";
 import { userInfos, users } from "@prisma/client";
-import ILogin from "../../interface/user/IUserLogin"; 
+import ILogin from "../../interface/user/IUserLogin";
 export const getUsers: RequestHandler = catchAsync(async (req, res) => {});
 
 export const initUser: RequestHandler = catchAsync(async (req, res) => {
   const data: { email: string } = req.body;
- 
-  const result = await initUserDB(data);
+
+  const result = await initUserDB(data); 
   sendResponse(res, { message: "User Initialize successfully", data: result });
   // res.cookie("RefreshToken", result.credentials.refreshToken);
 

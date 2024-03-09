@@ -14,6 +14,6 @@ export const sendOTP = async ({
     subject: "OTP Verification",
     text: "Please use the verification code below to sign in. " + code,
     to: email,
-  });
+  }).catch((er) => console.log(er));
   return emailR;
 };

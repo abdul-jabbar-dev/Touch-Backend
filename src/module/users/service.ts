@@ -33,18 +33,8 @@ export const initUserDB = async ({ email }: { email: string }) => {
   if (isExistEmail) {
     throw new Error("User Already exist");
   }
-  let sendRes: {
-    user: {
-      userId: string;
-      email: string;
-      userName: string;
-    };
-    credentials: {
-      accountStatus: AccountStatus;
-      accessToken: string | null;
-      refreshToken: string | null;
-    };
-  } | null;
+
+  let isComplete: boolean = false;
   const codeExp = new Date(Date.now() + 5 * 60 * 1000);
   try {
     const code = generateOTPCode();
@@ -90,20 +80,20 @@ export const initUserDB = async ({ email }: { email: string }) => {
       }
 
       const emailR = await sendOTP({ email, code });
-
-      if (!userCredential) {
-        throw new Error("OTP failed to generate");
-      }
-      sendRes = {
-        user: { userId: user.id, email: user.email, userName: user.userName },
-        credentials: {
-          accountStatus: userCredential.accountStatus,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        },
-      };
+ 
+      isComplete = true;
     });
-    if (sendRes!) {
+    if (isComplete) {
+      let sendRes: IReqVerifyUser | null = await prisma.users.findUnique({
+        where: { email },
+        include: { credentials: true },
+      });
+      console.log(sendRes);
+      if (sendRes && sendRes.credentials) {
+        sendRes.credentials.password = null;
+        sendRes.credentials.emailValidatorCode = null;
+        sendRes.credentials.emailValidatorCodeExp = null;
+      }
       return sendRes;
     } else {
       throw new Error("Registration failed");
@@ -292,7 +282,7 @@ export const loginInfoDB = async (loginInfo: ILogin) => {
             userName: user.userName,
           }),
         };
-        return tokens
+        return tokens;
       }
     }
   } catch (error) {
